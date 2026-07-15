@@ -2,6 +2,7 @@
 import subprocess
 import sys
 import shutil
+import argparse
 
 def compress_pdf(input_path: str, output_path: str, setting: str = '/ebook'):
     """
@@ -36,35 +37,64 @@ def compress_pdf(input_path: str, output_path: str, setting: str = '/ebook'):
         print("ERROR: Ghostscript failed:", e, file=sys.stderr)
         sys.exit(1)
 
+def dpi_to_setting(dpi: int) -> str:
+    """Convert DPI value to appropriate Ghostscript PDFSETTINGS."""
+    if dpi <= 72:
+        return "/screen"
+    elif dpi <= 150:
+        return "/ebook"
+    elif dpi <= 300:
+        return "/printer"
+    else:
+        return "/prepress"
+
 if __name__ == "__main__":
-    help_msg = (
-        "Usage: python compress_pdf.py in.pdf out.pdf [preset]\n"
-        "  Preset options (affect output PDF size and image quality):\n"
-        "    screen   - lowest quality, smallest size (~72 dpi images)\n"
-        "    ebook    - medium quality, small size (~150 dpi images) [default]\n"
-        "    printer  - high quality, larger size (~300 dpi images)\n"
-        "    prepress - maximum quality, largest size\n"
-        "    default  - sensible middle-ground\n"
-        "Example:\n"
-        "  python compress_pdf.py input.pdf output.pdf ebook"
+    parser = argparse.ArgumentParser(
+        description="Compress PDF files using Ghostscript with quality presets or DPI settings."
     )
-    if len(sys.argv) not in (3,4):
-        print(help_msg)
-        sys.exit(1)
-
-    in_pdf = sys.argv[1]
-    out_pdf = sys.argv[2]
-    preset = sys.argv[3] if len(sys.argv) == 4 else "ebook"
-    setting_map = {
-        "screen":   "/screen",
-        "ebook":    "/ebook",
-        "printer":  "/printer",
-        "prepress": "/prepress",
-        "default":  "/default",
-    }
-    if preset not in setting_map:
-        print("Invalid preset. Choose one of:", ", ".join(setting_map), file=sys.stderr)
-        print(help_msg)
-        sys.exit(1)
-
-    compress_pdf(in_pdf, out_pdf, setting_map[preset])
+    parser.add_argument("input", help="Input PDF file path")
+    parser.add_argument("output", help="Output PDF file path")
+    
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument(
+        "--preset",
+        choices=["screen", "ebook", "printer", "prepress", "default"],
+        default="ebook",
+        help=(
+            "Quality preset (default: ebook):\n"
+            "  screen   - lowest quality, smallest size (~72 dpi images)\n"
+            "  ebook    - medium quality, small size (~150 dpi images)\n"
+            "  printer  - high quality, larger size (~300 dpi images)\n"
+            "  prepress - maximum quality, largest size\n"
+            "  default  - sensible middle-ground"
+        )
+    )
+    group.add_argument(
+        "--dpi",
+        type=int,
+        help=(
+            "Target DPI for images (alternative to --preset):\n"
+            "  ≤72   → screen quality\n"
+            "  ≤150  → ebook quality\n"
+            "  ≤300  → printer quality\n"
+            "  >300  → prepress quality"
+        )
+    )
+    
+    args = parser.parse_args()
+    
+    if args.dpi:
+        setting = dpi_to_setting(args.dpi)
+        print(f"Using DPI {args.dpi} → {setting} quality")
+    else:
+        setting_map = {
+            "screen":   "/screen",
+            "ebook":    "/ebook",
+            "printer":  "/printer",
+            "prepress": "/prepress",
+            "default":  "/default",
+        }
+        setting = setting_map[args.preset]
+        print(f"Using preset '{args.preset}' → {setting} quality")
+    
+    compress_pdf(args.input, args.output, setting)

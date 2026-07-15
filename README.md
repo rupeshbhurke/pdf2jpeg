@@ -13,7 +13,7 @@ This tool converts each page of a PDF file to JPEG images and lists the DPI (dot
 
 ### Features
 
-- **Convert PDF pages to JPEG:** Each page is rendered as a JPEG file. You can control the output resolution using a zoom factor. Output filenames include the DPI (e.g., `file_page1_144dpi.jpg`).
+- **Convert PDF pages to JPEG:** Each page is rendered as a JPEG file. You can control the output resolution using DPI (dots per inch). Output filenames include the DPI (e.g., `file_page1_300dpi.jpg`).
 - **List embedded image DPIs:** For each raster image in the PDF, the script prints its pixel size, display size (in points), and effective DPI.
 - **Batch processing:** Process a single PDF or all PDFs in a directory.
 - **Custom output folder:** Optionally specify an output directory for JPEGs.
@@ -32,34 +32,35 @@ pip install pymupdf
 ### Usage
 
 ```bash
-python pdf2jpeg.py --file <PDF_FILE> [--zoom <factor>] [--output <output_dir>]
-python pdf2jpeg.py --dir <PDF_DIR> [--zoom <factor>] [--output <output_dir>]
+python pdf2jpeg.py --file <PDF_FILE> [--dpi <DPI>] [--output <output_dir>]
+python pdf2jpeg.py --dir <PDF_DIR> [--dpi <DPI>] [--output <output_dir>]
 ```
 
 #### Arguments
 
 - `--file`: Path to a single PDF file to process.
 - `--dir`: Path to a directory containing PDF files (processes all `.pdf` files in the directory).
-- `--zoom`: (Optional) Zoom factor for rendering.  
-  - `1.00` = 72 DPI (default)
-  - `4.17` ≈ 300 DPI (300/72)
-  - `8.33` ≈ 600 DPI (600/72)
+- `--dpi`: (Optional) DPI (dots per inch) for rendering.  
+  - `72` = standard resolution (default)
+  - `150` = medium quality
+  - `300` = high quality
+  - `600` = very high quality
   - Higher values = higher resolution.
 - `--output`: (Optional) Directory to save JPEGs.  
   - Defaults to the folder of each PDF.
 
 #### Example
 
-Convert a single PDF at 144 DPI and save JPEGs to `output/`:
+Convert a single PDF at 300 DPI and save JPEGs to `output/`:
 
 ```bash
-python pdf2jpeg.py --file mydoc.pdf --zoom 2.0 --output output/
+python pdf2jpeg.py --file mydoc.pdf --dpi 300 --output output/
 ```
 
-Process all PDFs in a folder at 300 DPI:
+Process all PDFs in a folder at 150 DPI:
 
 ```bash
-python pdf2jpeg.py --dir ./pdfs/ --zoom 4.17
+python pdf2jpeg.py --dir ./pdfs/ --dpi 150
 ```
 
 #### Output
@@ -75,7 +76,7 @@ python pdf2jpeg.py --dir ./pdfs/ --zoom 4.17
 
 ## 2. PDF Compressor (Ghostscript-based)
 
-This is a separate utility to compress PDF files using Ghostscript with selectable quality/size presets.
+This is a separate utility to compress PDF files using Ghostscript with selectable quality/size presets or direct DPI settings.
 
 ### Requirements
 
@@ -83,21 +84,43 @@ This is a separate utility to compress PDF files using Ghostscript with selectab
 
 ### Usage
 
+**Using presets:**
 ```bash
-python compress_pdf.py in.pdf out.pdf [preset]
+python compress_pdf.py input.pdf output.pdf --preset <preset>
 ```
 
-- `preset` options (affect output PDF size and image quality):
+**Using DPI (alternative to presets):**
+```bash
+python compress_pdf.py input.pdf output.pdf --dpi <DPI>
+```
+
+#### Arguments
+
+- `input.pdf`: Input PDF file path
+- `output.pdf`: Output PDF file path
+- `--preset`: (Optional) Quality preset (default: ebook). Choose from:
   - `screen`   - lowest quality, smallest size (~72 dpi images)
   - `ebook`    - medium quality, small size (~150 dpi images) [default]
   - `printer`  - high quality, larger size (~300 dpi images)
   - `prepress` - maximum quality, largest size
   - `default`  - sensible middle-ground
+- `--dpi`: (Optional) Target DPI for images (alternative to --preset):
+  - ≤72   → screen quality
+  - ≤150  → ebook quality  
+  - ≤300  → printer quality
+  - >300  → prepress quality
 
-**Example:**
+**Examples:**
 
+Using presets:
 ```bash
-python compress_pdf.py input.pdf output.pdf ebook
+python compress_pdf.py input.pdf output.pdf --preset ebook
+```
+
+Using DPI:
+```bash
+python compress_pdf.py input.pdf output.pdf --dpi 150
+python compress_pdf.py input.pdf output.pdf --dpi 300
 ```
 
 #### Output
